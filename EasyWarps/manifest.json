@@ -1,0 +1,10 @@
+{
+    "Name": "Easy Warps",
+    "Author": "hinagiku1306",
+    "Version": "1.0",
+    "Description": "Repurpose text signs as warp waypoints.",
+    "UniqueID": "hinagiku1306.EasyWarps",
+    "EntryDll": "EasyWarps.dll",
+    "MinimumApiVersion": "4.0.0",
+    "MinimumGameVersion": "1.6.0"
+}
