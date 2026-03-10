@@ -122,6 +122,7 @@ namespace EasyWarps.Core
         private void OnLocaleChanged(object? sender, LocaleChangedEventArgs e)
         {
             TranslationCache.Initialize(Helper.Translation);
+            LocationClassifier.ClearDisplayNameCache();
             Helper.GameContent.InvalidateCache("Data/Mail");
         }
 
@@ -179,10 +180,10 @@ namespace EasyWarps.Core
 
             gmcm.AddBoolOption(
                 ModManifest,
-                () => config.RememberFilterOption,
-                value => config.RememberFilterOption = value,
-                () => TranslationCache.ConfigRememberFilterName,
-                () => TranslationCache.ConfigRememberFilterTooltip
+                () => config.RememberFavoriteOption,
+                value => config.RememberFavoriteOption = value,
+                () => TranslationCache.ConfigRememberFavoriteName,
+                () => TranslationCache.ConfigRememberFavoriteTooltip
             );
 
             gmcm.AddTextOption(

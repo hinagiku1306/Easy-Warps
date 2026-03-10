@@ -18,7 +18,7 @@ namespace EasyWarps.UI
         public ClickableComponent EnableAnimationCheckbox { get; private set; } = null!;
         public ClickableComponent DisableHoverTextCheckbox { get; private set; } = null!;
         public ClickableComponent RememberSortCheckbox { get; private set; } = null!;
-        public ClickableComponent RememberFilterCheckbox { get; private set; } = null!;
+        public ClickableComponent RememberFavoriteCheckbox { get; private set; } = null!;
 
         public ClickableComponent SearchScopeDropdown { get; private set; } = null!;
         public List<ClickableComponent> SearchScopeOptions { get; private set; } = new();
@@ -123,9 +123,9 @@ namespace EasyWarps.UI
             currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);
-            labelsList.Add(TranslationCache.ConfigRememberFilterName);
-            tooltipsList.Add(TranslationCache.ConfigRememberFilterTooltip);
-            RememberFilterCheckbox = CreateCheckbox(currentY, "RememberFilter");
+            labelsList.Add(TranslationCache.ConfigRememberFavoriteName);
+            tooltipsList.Add(TranslationCache.ConfigRememberFavoriteTooltip);
+            RememberFavoriteCheckbox = CreateCheckbox(currentY, "RememberFavorite");
             currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);
@@ -153,7 +153,6 @@ namespace EasyWarps.UI
             rowLabels = labelsList.ToArray();
             rowTooltips = tooltipsList.ToArray();
 
-            // Buttons
             int buttonY = ButtonBoxBounds.Y + (ConfigButtonBoxHeight - TabAndButtonHeight) / 2;
             int maxButtonWidth = (Width - ConfigBottomButtonGap) / 2;
             int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ConfigSave, maxButtonWidth);
@@ -170,7 +169,6 @@ namespace EasyWarps.UI
                 "close"
             );
 
-            // Close X button
             CloseButton = new ClickableTextureComponent(
                 new Rectangle(X + Width - CloseButtonSize - CloseButtonEdgeMargin,
                     Y + CloseButtonEdgeMargin, CloseButtonSize, CloseButtonSize),

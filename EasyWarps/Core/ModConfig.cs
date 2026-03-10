@@ -4,13 +4,12 @@ namespace EasyWarps.Core
 {
     public class ModConfig
     {
-        // User-facing options
         public bool DisableModRequirement { get; set; }
-        public bool AlwaysRegisterAsWarpPoint { get; set; } = true;
+        public bool AlwaysRegisterAsWarpPoint { get; set; }
         public bool EnableWarpAnimation { get; set; } = true;
         public bool DisableSignHoveringText { get; set; } = true;
         public bool RememberSortOption { get; set; } = true;
-        public bool RememberFilterOption { get; set; } = true;
+        public bool RememberFavoriteOption { get; set; } = true;
         public WarpSearchScope DefaultSearchScope { get; set; } = WarpSearchScope.All;
 
         // Internal persisted (not shown in GMCM)

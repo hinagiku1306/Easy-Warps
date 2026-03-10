@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using StardewValley;
 using EasyWarps.Core;
@@ -22,9 +23,12 @@ namespace EasyWarps.Services
             var relativeOffset = new Vector2(player.TilePoint.X, player.TilePoint.Y) - currentSignTile;
             var destTile = new Vector2(destination.TileX, destination.TileY);
 
+            const CollisionMask warpMask = CollisionMask.All & ~CollisionMask.Characters & ~CollisionMask.Farmers;
+            const CollisionMask warpIgnorePassables = CollisionMask.Objects | CollisionMask.Flooring | CollisionMask.TerrainFeatures;
             var warpTarget = FindWarpTarget(
                 destination.TileX, destination.TileY, relativeOffset,
-                tile => targetLocation.isTilePassable(tile));
+                tile => targetLocation.isTileOnMap(tile) &&
+                    !targetLocation.IsTileBlockedBy(tile, warpMask, warpIgnorePassables));
 
             if (warpTarget == null)
             {
@@ -52,28 +56,29 @@ namespace EasyWarps.Services
 
             var center = new Vector2(destTileX, destTileY);
 
+            Vector2 below = center + new Vector2(0, 1);
+            if (isPassable(below)) return below;
+            Vector2 left = center + new Vector2(-1, 0);
+            if (isPassable(left)) return left;
+            Vector2 right = center + new Vector2(1, 0);
+            if (isPassable(right)) return right;
+            Vector2 up = center + new Vector2(0, -1);
+            if (isPassable(up)) return up;
+
             for (int ring = 1; ring <= MaxRingRadius; ring++)
             {
                 for (int x = -ring; x <= ring; x++)
                 {
-                    var top = center + new Vector2(x, -ring);
-                    if (isPassable(top))
-                        return top;
+                    for (int y = -ring; y <= ring; y++)
+                    {
+                        if (Math.Abs(x) != ring && Math.Abs(y) != ring) continue;
+                        // Ring 1 cardinals already checked above
+                        if (ring == 1 && (x == 0 || y == 0)) continue;
 
-                    var bottom = center + new Vector2(x, ring);
-                    if (isPassable(bottom))
-                        return bottom;
-                }
-
-                for (int y = -ring + 1; y <= ring - 1; y++)
-                {
-                    var left = center + new Vector2(-ring, y);
-                    if (isPassable(left))
-                        return left;
-
-                    var right = center + new Vector2(ring, y);
-                    if (isPassable(right))
-                        return right;
+                        var tile = center + new Vector2(x, y);
+                        if (isPassable(tile))
+                            return tile;
+                    }
                 }
             }
 

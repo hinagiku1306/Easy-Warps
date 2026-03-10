@@ -23,22 +23,31 @@ namespace EasyWarps.UI
         private ClickableComponent checkboxComponent = null!;
 
         public SignEditMenu(SObject signObj, WarpPointStore store, WarpPoint? existingWarp, bool editNameOnly = false)
-            : base(TranslationCache.SignEditTitle, null, signObj.signText.Value ?? "")
+            : base(GetTitle(signObj, editNameOnly), null,
+                  editNameOnly && existingWarp != null ? existingWarp.Name : signObj.signText.Value ?? "")
         {
             this.signObj = signObj;
             this.store = store;
             this.existingWarp = existingWarp;
             this.editNameOnly = editNameOnly;
 
-            isWarpChecked = existingWarp != null || ModEntry.Config.AlwaysRegisterAsWarpPoint;
+            isWarpChecked = existingWarp != null
+                || (ModEntry.Config.AlwaysRegisterAsWarpPoint && string.IsNullOrEmpty(signObj.signText.Value));
+            pasteButton.visible = false;
 
             doneNaming = OnDoneNaming;
             textBox.textLimit = SignTextMaxLength;
 
-            if (editNameOnly)
-                minLength = 1;
-
             RecalculateCheckboxLayout();
+        }
+
+        private static string GetTitle(SObject signObj, bool editNameOnly)
+        {
+            if (editNameOnly)
+                return TranslationCache.SignEditTitle;
+            return string.IsNullOrEmpty(signObj.signText.Value)
+                ? TranslationCache.SignEditTitleNew
+                : TranslationCache.SignEditTitle;
         }
 
         private void RecalculateCheckboxLayout()
@@ -71,14 +80,18 @@ namespace EasyWarps.UI
         private void OnDoneNaming(string text)
         {
             string trimmed = text.Trim();
-            signObj.signText.Value = trimmed;
-            signObj.showNextIndex.Value = string.IsNullOrEmpty(trimmed);
+
+            if (!editNameOnly)
+            {
+                signObj.signText.Value = trimmed;
+                signObj.showNextIndex.Value = string.IsNullOrEmpty(trimmed);
+            }
 
             var locationName = signObj.Location?.NameOrUniqueName ?? "";
             var tileX = (int)signObj.TileLocation.X;
             var tileY = (int)signObj.TileLocation.Y;
 
-            if (isWarpChecked && !string.IsNullOrEmpty(trimmed))
+            if (isWarpChecked)
             {
                 if (existingWarp != null)
                 {
@@ -103,7 +116,15 @@ namespace EasyWarps.UI
                 store.Delete(existingWarp.Id);
             }
 
-            exitThisMenu();
+            if (editNameOnly)
+            {
+                Game1.activeClickableMenu = new WarpMenu(store, signObj, signObj.TileLocation);
+            }
+            else
+            {
+                Game1.player.freezePause = 300;
+                exitThisMenu();
+            }
         }
 
         public override void draw(SpriteBatch b)
@@ -130,22 +151,19 @@ namespace EasyWarps.UI
 
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
-            base.gameWindowSizeChanged(oldBounds, newBounds);
-
-            width = Game1.uiViewport.Width;
-            height = Game1.uiViewport.Height;
-
             int vW = Game1.uiViewport.Width;
             int vH = Game1.uiViewport.Height;
+
+            xPositionOnScreen = 0;
+            yPositionOnScreen = 0;
+            width = vW;
+            height = vH;
 
             textBox.X = vW / 2 - SignEditTextBoxOffsetX;
             textBox.Y = vH / 2;
 
             doneNamingButton.bounds.X = vW / 2 + SignEditDoneButtonOffsetX;
             doneNamingButton.bounds.Y = vH / 2 - SignEditButtonOffsetY;
-
-            pasteButton.bounds.X = vW / 2 + SignEditPasteButtonOffsetX;
-            pasteButton.bounds.Y = vH / 2 - SignEditButtonOffsetY;
 
             textBoxCC.bounds.X = textBox.X;
             textBoxCC.bounds.Y = textBox.Y;

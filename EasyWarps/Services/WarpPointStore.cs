@@ -198,7 +198,7 @@ namespace EasyWarps.Services
 
         private void BuildSearchTextForPoint(WarpPoint point)
         {
-            searchText[point.Id] = $"{point.Name} {point.LocationName}";
+            searchText[point.Id] = $"{point.Name} {LocationClassifier.GetDisplayName(point.LocationName)}";
         }
 
         private void InvalidateFilterCache()

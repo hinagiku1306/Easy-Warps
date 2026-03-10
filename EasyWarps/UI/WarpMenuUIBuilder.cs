@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Menus;
 using EasyWarps.Models;
+using EasyWarps.Services;
 using EasyWarps.Utilities;
 using static EasyWarps.WarpLayoutConstants;
 
@@ -12,7 +13,6 @@ namespace EasyWarps.UI
 {
     public class WarpMenuUIBuilder
     {
-        // Outer bounds
         public int X { get; private set; }
         public int Y { get; private set; }
         public int Width { get; private set; }
@@ -20,8 +20,8 @@ namespace EasyWarps.UI
 
         // Content box (inside background texture box border)
         public Rectangle ContentBox { get; private set; }
+        public Rectangle TitleBoxBounds { get; private set; }
 
-        // Tabs
         public ClickableComponent TabAll { get; private set; } = null!;
         public ClickableComponent TabFarm { get; private set; } = null!;
         public ClickableComponent TabWorld { get; private set; } = null!;
@@ -31,19 +31,16 @@ namespace EasyWarps.UI
         public ClickableComponent SearchBar { get; private set; } = null!;
         public ClickableComponent SearchClearButton { get; private set; } = null!;
 
-        // Sort/filter row: sort dropdown + filter dropdown + clear
+        // Sort/filter row: sort dropdown + favorite checkbox
         public ClickableComponent SortDropdown { get; private set; } = null!;
-        public ClickableComponent FilterDropdown { get; private set; } = null!;
-        public ClickableComponent FilterClearButton { get; private set; } = null!;
+        public ClickableComponent FavoritesCheckbox { get; private set; } = null!;
 
-        // Dropdown options
         public List<ClickableComponent> SearchScopeOptions { get; private set; } = new();
         public List<ClickableComponent> SortOptions { get; private set; } = new();
-        public List<ClickableComponent> FilterOptions { get; private set; } = new();
 
-        // List
         public List<ClickableComponent> ListItems { get; private set; } = new();
         public Rectangle ListBox { get; private set; }
+        public int DividerY { get; private set; }
 
         // Per-row sub-regions (parallel arrays to ListItems)
         public List<Rectangle> FavStarBounds { get; private set; } = new();
@@ -55,20 +52,19 @@ namespace EasyWarps.UI
         public ClickableTextureComponent ScrollUpArrow { get; private set; } = null!;
         public ClickableTextureComponent ScrollDownArrow { get; private set; } = null!;
 
-        // Close button
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
 
-        // Config gear
-        public ClickableComponent ConfigGearButton { get; private set; } = null!;
+        // Config gear (floating, right of menu)
+        public ClickableTextureComponent ConfigGearButton { get; private set; } = null!;
 
-        // Cached widths
         private int searchScopeWidth;
         private int sortDropdownWidth;
-        private int filterDropdownWidth;
+        private int favLabelWidth;
 
         // Cached per-row text widths
         public int NameMaxWidth { get; private set; }
         public int LocationMaxWidth { get; private set; }
+        public int SeparatorWidth { get; private set; }
 
         public WarpMenuUIBuilder()
         {
@@ -84,21 +80,28 @@ namespace EasyWarps.UI
             int searchRowHeight = TabAndButtonHeight;
             int sortFilterRowHeight = TabAndButtonHeight;
             int listHeight = MaxVisibleRows * ListItemHeight;
-            int gearRowHeight = ConfigGearButtonSize + ConfigGearButtonGap;
 
-            int contentHeight = tabRowHeight + FilterRowGap
+            int contentHeight = tabRowHeight + TabToFilterGap
                 + searchRowHeight + FilterRowGap
-                + sortFilterRowHeight + FilterRowGap
-                + listHeight + FilterRowGap
-                + gearRowHeight;
+                + sortFilterRowHeight + FilterToDividerGap
+                + DividerHeight + DividerToListGap
+                + listHeight;
 
             Width = MenuWidth;
-            Height = contentHeight + BorderPadding * 2;
+            Height = contentHeight + BorderTopPadding + BorderPadding;
 
+            Vector2 titleSize = Game1.dialogueFont.MeasureString(TranslationCache.MenuTitle);
+            int titleBoxWidth = (int)titleSize.X + ConfigTitleSidePadding * 2;
+            int titleBoxHeight = ConfigTitleTopPadding + (int)titleSize.Y + ConfigTitleBottomPadding;
+
+            int totalHeight = titleBoxHeight + Height;
             X = (Game1.uiViewport.Width - Width) / 2;
-            Y = (Game1.uiViewport.Height - Height) / 2;
+            Y = (Game1.uiViewport.Height - totalHeight) / 2 + titleBoxHeight;
 
-            ContentBox = new Rectangle(X + BorderPadding, Y + BorderPadding, contentWidth, contentHeight);
+            int titleBoxX = X + (Width - titleBoxWidth) / 2;
+            TitleBoxBounds = new Rectangle(titleBoxX, Y - titleBoxHeight, titleBoxWidth, titleBoxHeight);
+
+            ContentBox = new Rectangle(X + BorderPadding, Y + BorderTopPadding, contentWidth, contentHeight);
 
             CalculateLayout();
         }
@@ -124,14 +127,7 @@ namespace EasyWarps.UI
             }
             sortDropdownWidth = Math.Max(maxSortWidth, TabAndButtonWidth);
 
-            string[] filterLabels = { TranslationCache.FilterFavorite };
-            int maxFilterWidth = 0;
-            foreach (var label in filterLabels)
-            {
-                int w = (int)Game1.smallFont.MeasureString(label).X + dropdownPadding;
-                maxFilterWidth = Math.Max(maxFilterWidth, w);
-            }
-            filterDropdownWidth = Math.Max(maxFilterWidth, TabAndButtonWidth);
+            favLabelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.FilterFavorite).X;
         }
 
         private void CalculateLayout()
@@ -141,14 +137,13 @@ namespace EasyWarps.UI
             int cw = ContentBox.Width;
             int curY = cy;
 
-            // --- Tabs row ---
-            int tabW = (cw - TabGap * 2) / 3;
-            TabAll = new ClickableComponent(new Rectangle(cx, curY, tabW, TabAndButtonHeight), "tabAll");
-            TabFarm = new ClickableComponent(new Rectangle(cx + tabW + TabGap, curY, tabW, TabAndButtonHeight), "tabFarm");
-            TabWorld = new ClickableComponent(new Rectangle(cx + tabW * 2 + TabGap * 2, curY, cw - tabW * 2 - TabGap * 2, TabAndButtonHeight), "tabWorld");
-            curY += TabAndButtonHeight + FilterRowGap;
+            int totalTabsW = TabAndButtonWidth * 3 + TabGap * 2;
+            int tabStartX = cx + (cw - totalTabsW) / 2;
+            TabAll = new ClickableComponent(new Rectangle(tabStartX, curY, TabAndButtonWidth, TabAndButtonHeight), "tabAll");
+            TabFarm = new ClickableComponent(new Rectangle(tabStartX + TabAndButtonWidth + TabGap, curY, TabAndButtonWidth, TabAndButtonHeight), "tabFarm");
+            TabWorld = new ClickableComponent(new Rectangle(tabStartX + TabAndButtonWidth * 2 + TabGap * 2, curY, TabAndButtonWidth, TabAndButtonHeight), "tabWorld");
+            curY += TabAndButtonHeight + TabToFilterGap;
 
-            // --- Search row: scope dropdown + search bar + clear ---
             int searchBarX = cx + searchScopeWidth + FilterRowGap;
             int searchBarW = cw - searchScopeWidth - FilterRowGap;
             SearchScopeDropdown = new ClickableComponent(new Rectangle(cx, curY, searchScopeWidth, TabAndButtonHeight), "searchScope");
@@ -161,19 +156,19 @@ namespace EasyWarps.UI
             BuildSearchScopeOptions();
             curY += TabAndButtonHeight + FilterRowGap;
 
-            // --- Sort/filter row ---
-            int filterX = cx + cw - filterDropdownWidth - ClearButtonSize - FilterRowGap;
-            int filterClearX = cx + cw - ClearButtonSize;
-            int filterClearY = curY + (TabAndButtonHeight - ClearButtonSize) / 2;
             SortDropdown = new ClickableComponent(new Rectangle(cx, curY, sortDropdownWidth, TabAndButtonHeight), "sortDropdown");
-            FilterDropdown = new ClickableComponent(new Rectangle(filterX, curY, filterDropdownWidth, TabAndButtonHeight), "filterDropdown");
-            FilterClearButton = new ClickableComponent(new Rectangle(filterClearX, filterClearY, ClearButtonSize, ClearButtonSize), "filterClear");
+
+            int checkboxX = cx + sortDropdownWidth + 25;
+            int checkboxY = curY + (TabAndButtonHeight - CheckboxSize) / 2;
+            int favTotalWidth = CheckboxSize + 8 + favLabelWidth;
+            FavoritesCheckbox = new ClickableComponent(new Rectangle(checkboxX, checkboxY, favTotalWidth, CheckboxSize), "favoritesCheckbox");
 
             BuildSortOptions();
-            BuildFilterOptions();
-            curY += TabAndButtonHeight + FilterRowGap;
+            curY += TabAndButtonHeight + FilterToDividerGap;
 
-            // --- List box ---
+            DividerY = curY;
+            curY += DividerHeight + DividerToListGap;
+
             int listW = cw;
             int listH = MaxVisibleRows * ListItemHeight;
             ListBox = new Rectangle(cx, curY, listW, listH);
@@ -181,24 +176,24 @@ namespace EasyWarps.UI
             BuildListItems(curY, listW);
             CalculateRowSubRegions();
 
-            // Scroll arrows (right side, vertically centered on list)
-            int arrowW = (int)(UIHelpers.UpScrollArrowSourceRect.Width * ListScrollArrowScale);
-            int arrowH = (int)(UIHelpers.UpScrollArrowSourceRect.Height * ListScrollArrowScale);
-            int arrowX = cx + cw - arrowW - ScrollArrowRightPadding;
-            int listMidY = curY + listH / 2;
+            // Scroll arrows (in right border padding, outside content box)
+            int arrowCenterX = ContentBox.Right + BorderPadding / 2;
 
             ScrollUpArrow = new ClickableTextureComponent(
-                new Rectangle(arrowX, listMidY - arrowH - 4, ScrollArrowButtonSize, ScrollArrowButtonSize),
+                new Rectangle(arrowCenterX - ScrollArrowButtonSize / 2, curY + 4, ScrollArrowButtonSize, ScrollArrowButtonSize),
                 Game1.mouseCursors, UIHelpers.UpScrollArrowSourceRect, ListScrollArrowScale);
             ScrollDownArrow = new ClickableTextureComponent(
-                new Rectangle(arrowX, listMidY + 4, ScrollArrowButtonSize, ScrollArrowButtonSize),
+                new Rectangle(arrowCenterX - ScrollArrowButtonSize / 2, curY + listH - ScrollArrowButtonSize + 4, ScrollArrowButtonSize, ScrollArrowButtonSize),
                 Game1.mouseCursors, UIHelpers.DownScrollArrowSourceRect, ListScrollArrowScale);
 
-            curY += listH + FilterRowGap;
-
-            // --- Config gear (bottom-right) ---
-            int gearX = cx + cw - ConfigGearButtonSize;
-            ConfigGearButton = new ClickableComponent(new Rectangle(gearX, curY, ConfigGearButtonSize, ConfigGearButtonSize), "configGear");
+            // --- Config gear (floating, right of menu) ---
+            int gearBtnX = X + Width + ConfigGearFloatingGap;
+            int gearBtnY = Y + (Height - ConfigGearButtonSize) / 2 - 130;
+            ConfigGearButton = new ClickableTextureComponent(
+                new Rectangle(gearBtnX, gearBtnY, ConfigGearButtonSize, ConfigGearButtonSize),
+                Game1.mouseCursors,
+                new Rectangle(30, 428, 10, 10),
+                ConfigGearButtonSize / 10f);
 
             // --- Close button (top-right corner of menu) ---
             int closeX = X + Width - CloseButtonSize - CloseButtonEdgeMargin;
@@ -212,7 +207,7 @@ namespace EasyWarps.UI
         {
             SearchScopeOptions.Clear();
             string[] labels = { TranslationCache.SearchScopeAll, TranslationCache.SearchScopeName, TranslationCache.SearchScopeLocation };
-            int optY = SearchScopeDropdown.bounds.Bottom;
+            int optY = SearchScopeDropdown.bounds.Bottom + DropdownPanelPaddingV;
             for (int i = 0; i < labels.Length; i++)
             {
                 SearchScopeOptions.Add(new ClickableComponent(
@@ -225,24 +220,11 @@ namespace EasyWarps.UI
         {
             SortOptions.Clear();
             string[] labels = { TranslationCache.SortAToZ, TranslationCache.SortZToA, TranslationCache.SortNewest, TranslationCache.SortOldest, TranslationCache.SortLastUsed };
-            int optY = SortDropdown.bounds.Bottom;
+            int optY = SortDropdown.bounds.Bottom + DropdownPanelPaddingV;
             for (int i = 0; i < labels.Length; i++)
             {
                 SortOptions.Add(new ClickableComponent(
                     new Rectangle(SortDropdown.bounds.X, optY + i * DropdownOptionHeight, SortDropdown.bounds.Width, DropdownOptionHeight),
-                    labels[i]));
-            }
-        }
-
-        private void BuildFilterOptions()
-        {
-            FilterOptions.Clear();
-            string[] labels = { TranslationCache.FilterFavorite };
-            int optY = FilterDropdown.bounds.Bottom;
-            for (int i = 0; i < labels.Length; i++)
-            {
-                FilterOptions.Add(new ClickableComponent(
-                    new Rectangle(FilterDropdown.bounds.X, optY + i * DropdownOptionHeight, FilterDropdown.bounds.Width, DropdownOptionHeight),
                     labels[i]));
             }
         }
@@ -272,33 +254,29 @@ namespace EasyWarps.UI
                 int rw = item.bounds.Width;
                 int rh = item.bounds.Height;
 
-                // Fav star: left margin, vertically centered
                 int starX = rx + ListItemLeftMargin;
                 int starY = ry + (rh - FavoriteStarSize) / 2;
                 FavStarBounds.Add(new Rectangle(starX, starY, FavoriteStarSize, FavoriteStarSize));
 
-                // Delete X: right end
-                int deleteX = rx + rw - ListItemLeftMargin - RowActionButtonSize;
-                int deleteY = ry + (rh - RowActionButtonSize) / 2;
-                DeleteBounds.Add(new Rectangle(deleteX, deleteY, RowActionButtonSize, RowActionButtonSize));
+                int deleteX = rx + rw - ListItemLeftMargin - RowDeleteButtonSize;
+                int deleteY = ry + (rh - RowDeleteButtonSize) / 2;
+                DeleteBounds.Add(new Rectangle(deleteX, deleteY, RowDeleteButtonSize, RowDeleteButtonSize));
 
-                // Edit gear: left of delete
-                int editX = deleteX - RowActionButtonGap - RowActionButtonSize;
-                int editY = deleteY;
-                EditBounds.Add(new Rectangle(editX, editY, RowActionButtonSize, RowActionButtonSize));
+                int editX = deleteX - RowActionButtonGap - RowEditButtonSize;
+                int editY = ry + (rh - RowEditButtonSize) / 2;
+                EditBounds.Add(new Rectangle(editX, editY, RowEditButtonSize, RowEditButtonSize));
 
-                // Name area: between star and edit
                 int nameX = starX + FavoriteStarSize + ListIconToTextGap;
-                int nameW = editX - RowActionButtonGap - nameX;
+                int nameW = editX - RowTextToButtonGap - nameX;
                 NameBounds.Add(new Rectangle(nameX, ry, nameW, rh));
             }
 
-            // Calculate max text widths for name and location (name gets ~60% of name area, location gets rest)
+            SeparatorWidth = (int)Game1.smallFont.MeasureString(" | ").X;
             if (NameBounds.Count > 0)
             {
-                int totalNameAreaWidth = NameBounds[0].Width;
-                NameMaxWidth = (int)(totalNameAreaWidth * 0.55f);
-                LocationMaxWidth = totalNameAreaWidth - NameMaxWidth - ListIconGap;
+                int textAreaWidth = NameBounds[0].Width - SeparatorWidth;
+                NameMaxWidth = textAreaWidth / 2;
+                LocationMaxWidth = textAreaWidth - NameMaxWidth;
             }
         }
 
@@ -311,6 +289,15 @@ namespace EasyWarps.UI
                 Color.Black * BackgroundOverlayOpacity);
 
             UIHelpers.DrawTextureBox(b, X, Y, Width, Height, Color.White);
+
+            UIHelpers.DrawTextureBox(b, TitleBoxBounds.X, TitleBoxBounds.Y,
+                TitleBoxBounds.Width, TitleBoxBounds.Height, Color.White);
+
+            Vector2 titleSize = Game1.dialogueFont.MeasureString(TranslationCache.MenuTitle);
+            Utility.drawTextWithShadow(b, TranslationCache.MenuTitle, Game1.dialogueFont,
+                new Vector2(TitleBoxBounds.X + (TitleBoxBounds.Width - titleSize.X) / 2,
+                    TitleBoxBounds.Y + ConfigTitleTopPadding),
+                Game1.textColor);
         }
 
         public void DrawTabs(SpriteBatch b, WarpCategory activeCategory)
@@ -335,7 +322,7 @@ namespace EasyWarps.UI
                 placeholder: TranslationCache.Search, clearButton: SearchClearButton);
         }
 
-        public void DrawSortFilterRow(SpriteBatch b, WarpSortMode sortMode, bool favoritesOnly, bool sortOpen, bool filterOpen)
+        public void DrawSortFilterRow(SpriteBatch b, WarpSortMode sortMode, bool favoritesOnly, bool sortOpen)
         {
             string sortLabel = sortMode switch
             {
@@ -349,16 +336,28 @@ namespace EasyWarps.UI
 
             UIHelpers.DrawDropdownButton(b, SortDropdown.bounds, sortLabel, sortOpen,
                 label: TranslationCache.Sort, labelX: SortDropdown.bounds.X, labelY: null);
-            UIHelpers.DrawDropdownButton(b, FilterDropdown.bounds, favoritesOnly ? TranslationCache.FilterFavorite : "",
-                filterOpen, label: TranslationCache.Filter, labelX: FilterDropdown.bounds.X, labelY: null,
-                clearButton: FilterClearButton, hasValue: favoritesOnly, placeholder: "\u2014");
+
+            var cb = FavoritesCheckbox.bounds;
+            Rectangle sourceRect = favoritesOnly ? UIHelpers.CheckedSourceRect : UIHelpers.UncheckedSourceRect;
+            b.Draw(Game1.mouseCursors, new Vector2(cb.X, cb.Y), sourceRect,
+                Color.White, 0f, Vector2.Zero, CheckboxScale, SpriteEffects.None, 1f);
+
+            float textHeight = Game1.smallFont.MeasureString(TranslationCache.FilterFavorite).Y;
+            int labelX = cb.X + CheckboxSize + 8;
+            int labelY = cb.Y + (CheckboxSize - (int)textHeight) / 2;
+            Utility.drawTextWithShadow(b, TranslationCache.FilterFavorite, Game1.smallFont,
+                new Vector2(labelX, labelY), Game1.textColor);
+        }
+
+        public void DrawDivider(SpriteBatch b)
+        {
+            b.Draw(Game1.staminaRect,
+                new Rectangle(ContentBox.X, DividerY, ContentBox.Width, DividerHeight),
+                Game1.textColor * 0.3f);
         }
 
         public void DrawList(SpriteBatch b, List<WarpPoint> points, int scrollOffset, bool anyDropdownOpen, string? hoveredPointId)
         {
-            // Draw list box background
-            UIHelpers.DrawTextureBoxNoShadow(b, ListBox.X, ListBox.Y, ListBox.Width, ListBox.Height, Color.White * 0.3f);
-
             for (int i = 0; i < MaxVisibleRows; i++)
             {
                 int dataIndex = scrollOffset + i;
@@ -368,13 +367,11 @@ namespace EasyWarps.UI
                 var point = points[dataIndex];
                 var rowBounds = ListItems[i].bounds;
 
-                // Hover highlight
                 if (!anyDropdownOpen && !UIHelpers.SuppressHover && hoveredPointId == point.Id)
                 {
                     b.Draw(Game1.staminaRect, rowBounds, Color.Wheat * 0.6f);
                 }
 
-                // Fav star
                 var starRect = FavStarBounds[i];
                 var starSourceRect = point.IsFavorite
                     ? new Rectangle(346, 392, 8, 8)
@@ -382,35 +379,59 @@ namespace EasyWarps.UI
                 b.Draw(Game1.mouseCursors, new Vector2(starRect.X, starRect.Y), starSourceRect,
                     Color.White, 0f, Vector2.Zero, FavoriteStarSize / 8f, SpriteEffects.None, 1f);
 
-                // Name + location text
                 var nameBounds = NameBounds[i];
-                string truncName = UIHelpers.TruncateText(point.Name, NameMaxWidth);
-                string truncLoc = UIHelpers.TruncateText(point.LocationName, LocationMaxWidth);
-
+                bool hasName = !string.IsNullOrEmpty(point.Name);
                 float textH = Game1.smallFont.MeasureString("A").Y;
                 float nameY = nameBounds.Y + (nameBounds.Height - textH) / 2;
-                Utility.drawTextWithShadow(b, truncName, Game1.smallFont,
-                    new Vector2(nameBounds.X, nameY), Game1.textColor);
 
-                float nameW = Game1.smallFont.MeasureString(truncName).X;
-                float locX = nameBounds.X + nameW + ListIconGap;
-                Utility.drawTextWithShadow(b, truncLoc, Game1.smallFont,
-                    new Vector2(locX, nameY), Game1.textColor * 0.6f);
+                string locDisplayName = LocationClassifier.GetDisplayName(point.LocationName);
 
-                // Edit gear icon
-                var editRect = EditBounds[i];
-                var gearSourceRect = new Rectangle(402, 361, 10, 10);
-                float gearScale = RowActionButtonSize / 10f;
-                b.Draw(Game1.mouseCursors, new Vector2(editRect.X, editRect.Y), gearSourceRect,
-                    Color.White, 0f, Vector2.Zero, gearScale, SpriteEffects.None, 1f);
+                if (hasName)
+                {
+                    int totalAvail = NameMaxWidth + SeparatorWidth + LocationMaxWidth;
+                    var (displayName, displayLoc) = UIHelpers.TruncateNameAndLocation(
+                        point.Name, locDisplayName, totalAvail, SeparatorWidth);
 
-                // Delete X icon
-                var deleteRect = DeleteBounds[i];
-                var xSourceRect = new Rectangle(337, 494, 12, 12);
-                float xScale = RowActionButtonSize / 12f;
-                b.Draw(Game1.mouseCursors, new Vector2(deleteRect.X, deleteRect.Y), xSourceRect,
-                    Color.White, 0f, Vector2.Zero, xScale, SpriteEffects.None, 1f);
+                    Utility.drawTextWithShadow(b, displayName, Game1.smallFont,
+                        new Vector2(nameBounds.X, nameY), Game1.textColor);
+
+                    float nameW = Game1.smallFont.MeasureString(displayName).X;
+                    float sepX = nameBounds.X + nameW;
+                    Utility.drawTextWithShadow(b, " | ", Game1.smallFont,
+                        new Vector2(sepX, nameY), Game1.textColor * 0.4f);
+                    float locX = sepX + SeparatorWidth;
+                    Utility.drawTextWithShadow(b, displayLoc, Game1.smallFont,
+                        new Vector2(locX, nameY), Game1.textColor * 0.6f);
+                }
+                else
+                {
+                    int fullWidth = NameMaxWidth + SeparatorWidth + LocationMaxWidth;
+                    string truncLoc = UIHelpers.TruncateText(locDisplayName, fullWidth);
+                    Utility.drawTextWithShadow(b, truncLoc, Game1.smallFont,
+                        new Vector2(nameBounds.X, nameY), Game1.textColor);
+                }
+
+                DrawRowEditButton(b, EditBounds[i], anyDropdownOpen);
+                DrawRowDeleteButton(b, DeleteBounds[i], anyDropdownOpen);
             }
+        }
+
+        private void DrawRowEditButton(SpriteBatch b, Rectangle btn, bool suppressHover)
+        {
+            bool hovered = !suppressHover && !UIHelpers.SuppressHover && btn.Contains(Game1.getMouseX(), Game1.getMouseY());
+            float scale = hovered ? RowEditHoverScale : RowEditBaseScale;
+            Vector2 center = new Vector2(btn.X + btn.Width / 2f, btn.Y + btn.Height / 2f);
+            b.Draw(Game1.mouseCursors, center, new Rectangle(30, 428, 10, 10),
+                Color.White, 0f, new Vector2(5, 5), scale, SpriteEffects.None, 1f);
+        }
+
+        private void DrawRowDeleteButton(SpriteBatch b, Rectangle btn, bool suppressHover)
+        {
+            bool hovered = !suppressHover && !UIHelpers.SuppressHover && btn.Contains(Game1.getMouseX(), Game1.getMouseY());
+            float scale = hovered ? RowDeleteHoverScale : RowDeleteBaseScale;
+            Vector2 center = new Vector2(btn.X + btn.Width / 2f, btn.Y + btn.Height / 2f);
+            b.Draw(Game1.mouseCursors, center, new Rectangle(337, 494, 12, 12),
+                Color.White, 0f, new Vector2(6, 6), scale, SpriteEffects.None, 1f);
         }
 
         public void DrawScrollArrows(SpriteBatch b, int scrollOffset, int totalItems)
@@ -430,18 +451,23 @@ namespace EasyWarps.UI
 
         public void DrawConfigGear(SpriteBatch b)
         {
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool hovered = !UIHelpers.SuppressHover && ConfigGearButton.containsPoint(mouseX, mouseY);
+            bool isHovered = !UIHelpers.SuppressHover && ConfigGearButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
 
-            var gearSourceRect = new Rectangle(402, 361, 10, 10);
-            float scale = ConfigGearButtonSize / 10f;
-            float drawScale = hovered ? scale * 1.1f : scale;
-            int drawX = ConfigGearButton.bounds.X + (ConfigGearButtonSize - (int)(10 * drawScale)) / 2;
-            int drawY = ConfigGearButton.bounds.Y + (ConfigGearButtonSize - (int)(10 * drawScale)) / 2;
+            int bgSize = (int)(ConfigGearButton.bounds.Width * buttonScale);
+            int bgX = ConfigGearButton.bounds.X + (ConfigGearButton.bounds.Width - bgSize) / 2;
+            int bgY = ConfigGearButton.bounds.Y + (ConfigGearButton.bounds.Height - bgSize) / 2;
 
-            b.Draw(Game1.mouseCursors, new Vector2(drawX, drawY), gearSourceRect,
-                Color.White, 0f, Vector2.Zero, drawScale, SpriteEffects.None, 1f);
+            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
+
+            Vector2 iconCenter = new Vector2(
+                ConfigGearButton.bounds.X + ConfigGearButton.bounds.Width / 2,
+                ConfigGearButton.bounds.Y + ConfigGearButton.bounds.Height / 2);
+            Rectangle gearSource = new Rectangle(30, 428, 10, 10);
+            float iconScale = (bgSize / 10f) * 0.6f;
+            Vector2 origin = new Vector2(5, 5);
+            b.Draw(Game1.mouseCursors, iconCenter, gearSource, Color.White, 0f,
+                origin, iconScale, SpriteEffects.None, 1f);
         }
 
         public void DrawEmptyState(SpriteBatch b, string message)

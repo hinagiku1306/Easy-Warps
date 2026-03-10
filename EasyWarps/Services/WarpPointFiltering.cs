@@ -18,7 +18,7 @@ namespace EasyWarps.Services
                 WarpSearchScope.Name => points.Where(p =>
                     p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)),
                 WarpSearchScope.Location => points.Where(p =>
-                    p.LocationName.Contains(searchText, StringComparison.OrdinalIgnoreCase)),
+                    LocationClassifier.GetDisplayName(p.LocationName).Contains(searchText, StringComparison.OrdinalIgnoreCase)),
                 _ => points.Where(p =>
                     precomputedSearchText.TryGetValue(p.Id, out var text) &&
                     text.Contains(searchText, StringComparison.OrdinalIgnoreCase))
@@ -49,7 +49,8 @@ namespace EasyWarps.Services
         {
             return sortMode switch
             {
-                WarpSortMode.ZToA => points.OrderByDescending(p => p.Name, StringComparer.OrdinalIgnoreCase),
+                WarpSortMode.ZToA => points
+                    .OrderByDescending(p => GetSortKey(p), StringComparer.OrdinalIgnoreCase),
                 WarpSortMode.Newest => points
                     .OrderByDescending(p => p.CreatedDay)
                     .ThenByDescending(p => p.CreatedTick),
@@ -60,8 +61,15 @@ namespace EasyWarps.Services
                     .OrderByDescending(p => p.LastUsedDay > 0 ? 1 : 0)
                     .ThenByDescending(p => p.LastUsedDay)
                     .ThenByDescending(p => p.LastUsedTick),
-                _ => points.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                _ => points
+                    .OrderBy(p => GetSortKey(p), StringComparer.OrdinalIgnoreCase)
             };
+        }
+
+        private static string GetSortKey(WarpPoint p)
+        {
+            var locDisplay = LocationClassifier.GetDisplayName(p.LocationName);
+            return string.IsNullOrEmpty(p.Name) ? locDisplay : $"{p.Name} | {locDisplay}";
         }
     }
 }

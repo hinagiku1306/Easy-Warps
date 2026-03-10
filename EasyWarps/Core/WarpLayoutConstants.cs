@@ -7,13 +7,14 @@ namespace EasyWarps
         // Menu Dimensions
         public const int MenuWidth = 650;
         public const int BorderPadding = 40;
+        public const int BorderTopPadding = 30;
         public const int ContentBoxPadding = 16;
 
         // Tabs
         public const int TabGap = 8;
 
         // Buttons & Tabs
-        public const int TabAndButtonWidth = 110;
+        public const int TabAndButtonWidth = 120;
         public const int TabAndButtonHeight = 60;
         public const int TextPadding = 15;
         public const float TabOpacity = 0.2f;
@@ -22,18 +23,21 @@ namespace EasyWarps
         public const int MaxVisibleRows = 6;
         public const int ListItemHeight = 48;
         public const int ListItemLeftMargin = 8;
-        public const int ListIconGap = 10;
         public const int ListIconToTextGap = 10;
 
         // Scroll Arrows (right side of list)
         public const int ScrollArrowButtonSize = 44;
-        public const float ListScrollArrowScale = 2.5f;
-        public const int ScrollArrowRightPadding = 10;
+        public const float ListScrollArrowScale = 1.8f;
+
+        // Section Gaps
+        public const int TabToFilterGap = 10;
+        public const int FilterToDividerGap = 10;
+        public const int DividerToListGap = 10;
+        public const int DividerHeight = 1;
 
         // Search & Filter Row
         public const int FilterRowHeight = 44;
         public const int FilterRowGap = 8;
-        public const int FilterDropdownWidth = 200;
         public const int FilterTextPadding = 12;
 
         // Input Bar
@@ -51,6 +55,7 @@ namespace EasyWarps
         public const int DropdownMaxVisible = 5;
         public const int DropdownOptionHeight = 40;
         public const int DropdownPanelPadding = 5;
+        public const int DropdownPanelPaddingV = 4;
 
         // Close Button
         public const int CloseButtonSize = 48;
@@ -60,9 +65,9 @@ namespace EasyWarps
         public const int BottomButtonGap = 16;
         public const int ButtonBoxHeight = 70;
 
-        // Config Gear
-        public const int ConfigGearButtonSize = 40;
-        public const int ConfigGearButtonGap = 5;
+        // Config Gear (floating, right of menu — matches OutfitStudio)
+        public const int ConfigGearButtonSize = (int)(CloseButtonSize * 1.1f);
+        public const int ConfigGearFloatingGap = 5;
 
         // Hover & Effects
         public const float ButtonHoveringScale = 1.05f;
@@ -114,17 +119,26 @@ namespace EasyWarps
         // Favorite Star
         public const int FavoriteStarSize = 28;
 
-        // Row Action Buttons (edit gear, delete X)
-        public const int RowActionButtonSize = 20;
+        // Row Action Buttons (edit gear, delete X — sizes match OutfitStudio ScheduleMenu)
+        public const int RowEditButtonSize = 28;
+        public const int RowDeleteButtonSize = 24;
         public const int RowActionButtonGap = 8;
+        public const int RowTextToButtonGap = 2;
+        public const float RowEditBaseScale = 2.0f;
+        public const float RowEditHoverScale = 2.2f;
+        public const float RowDeleteBaseScale = 2.0f;
+        public const float RowDeleteHoverScale = 2.2f;
+
+        // List Scroll Arrow Column
+        public const int ListArrowColumnWidth = 44;
+        public const int ListArrowColumnGap = 4;
 
         // Sign Edit Menu (vanilla TitleTextInputMenu layout reconstruction)
         public const int SignTextMaxLength = 60;
-        public const int SignEditCheckboxBelowTextBox = 60;
+        public const int SignEditCheckboxBelowTextBox = 85;
         public const int SignEditCheckboxLabelGap = 10;
         public const int SignEditTextBoxOffsetX = 320;
         public const int SignEditDoneButtonOffsetX = 228;
-        public const int SignEditPasteButtonOffsetX = 292;
         public const int SignEditButtonOffsetY = 8;
     }
 }

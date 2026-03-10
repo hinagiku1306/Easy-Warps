@@ -19,7 +19,6 @@ namespace EasyWarps.Utilities
         public static string SortOldest { get; private set; } = "";
         public static string SortLastUsed { get; private set; } = "";
         public static string Sort { get; private set; } = "";
-        public static string Filter { get; private set; } = "";
         public static string FilterFavorite { get; private set; } = "";
         public static string EmptyNoWarpPoints { get; private set; } = "";
         public static string EmptyNoMatches { get; private set; } = "";
@@ -28,11 +27,10 @@ namespace EasyWarps.Utilities
 
         // Sign edit
         public static string SignEditTitle { get; private set; } = "";
+        public static string SignEditTitleNew { get; private set; } = "";
         public static string SignEditCheckbox { get; private set; } = "";
 
         // Warp menu actions
-        public static string EditName { get; private set; } = "";
-        public static string DeletePoint { get; private set; } = "";
         public static string DeleteConfirmQuestion { get; private set; } = "";
         public static string CommonYes { get; private set; } = "";
         public static string CommonNo { get; private set; } = "";
@@ -46,8 +44,8 @@ namespace EasyWarps.Utilities
         public static string ConfigDisableHoverTextTooltip { get; private set; } = "";
         public static string ConfigRememberSortName { get; private set; } = "";
         public static string ConfigRememberSortTooltip { get; private set; } = "";
-        public static string ConfigRememberFilterName { get; private set; } = "";
-        public static string ConfigRememberFilterTooltip { get; private set; } = "";
+        public static string ConfigRememberFavoriteName { get; private set; } = "";
+        public static string ConfigRememberFavoriteTooltip { get; private set; } = "";
         public static string ConfigDefaultSearchScopeName { get; private set; } = "";
         public static string ConfigDefaultSearchScopeTooltip { get; private set; } = "";
 
@@ -79,7 +77,6 @@ namespace EasyWarps.Utilities
             SortOldest = translation.Get("menu.sort.oldest");
             SortLastUsed = translation.Get("menu.sort.lastUsed");
             Sort = translation.Get("menu.sort");
-            Filter = translation.Get("menu.filter");
             FilterFavorite = translation.Get("menu.filter.favorite");
             EmptyNoWarpPoints = translation.Get("menu.empty.noWarpPoints");
             EmptyNoMatches = translation.Get("menu.empty.noMatches");
@@ -88,11 +85,10 @@ namespace EasyWarps.Utilities
 
             // Sign edit
             SignEditTitle = translation.Get("signEdit.title");
+            SignEditTitleNew = translation.Get("signEdit.titleNew");
             SignEditCheckbox = translation.Get("signEdit.checkbox");
 
             // Warp menu actions
-            EditName = translation.Get("menu.editName");
-            DeletePoint = translation.Get("menu.deletePoint");
             DeleteConfirmQuestion = translation.Get("menu.deleteConfirm");
             CommonYes = translation.Get("common.yes");
             CommonNo = translation.Get("common.no");
@@ -106,8 +102,8 @@ namespace EasyWarps.Utilities
             ConfigDisableHoverTextTooltip = translation.Get("config.disableHoverText.tooltip");
             ConfigRememberSortName = translation.Get("config.rememberSort.name");
             ConfigRememberSortTooltip = translation.Get("config.rememberSort.tooltip");
-            ConfigRememberFilterName = translation.Get("config.rememberFilter.name");
-            ConfigRememberFilterTooltip = translation.Get("config.rememberFilter.tooltip");
+            ConfigRememberFavoriteName = translation.Get("config.rememberFavorite.name");
+            ConfigRememberFavoriteTooltip = translation.Get("config.rememberFavorite.tooltip");
             ConfigDefaultSearchScopeName = translation.Get("config.defaultSearchScope.name");
             ConfigDefaultSearchScopeTooltip = translation.Get("config.defaultSearchScope.tooltip");
 

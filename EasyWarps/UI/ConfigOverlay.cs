@@ -22,7 +22,7 @@ namespace EasyWarps.UI
         private bool enableAnimation;
         private bool disableHoverText;
         private bool rememberSort;
-        private bool rememberFilter;
+        private bool rememberFavorite;
         private WarpSearchScope defaultSearchScope;
 
         private bool searchScopeDropdownOpen;
@@ -37,7 +37,7 @@ namespace EasyWarps.UI
             enableAnimation = ModEntry.Config.EnableWarpAnimation;
             disableHoverText = ModEntry.Config.DisableSignHoveringText;
             rememberSort = ModEntry.Config.RememberSortOption;
-            rememberFilter = ModEntry.Config.RememberFilterOption;
+            rememberFavorite = ModEntry.Config.RememberFavoriteOption;
             defaultSearchScope = ModEntry.Config.DefaultSearchScope;
 
             Game1.keyboardDispatcher.Subscriber = null;
@@ -101,7 +101,7 @@ namespace EasyWarps.UI
             if (TryToggleCheckbox(uiBuilder.EnableAnimationCheckbox, x, y, ref enableAnimation, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.DisableHoverTextCheckbox, x, y, ref disableHoverText, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.RememberSortCheckbox, x, y, ref rememberSort, playSound)) return;
-            if (TryToggleCheckbox(uiBuilder.RememberFilterCheckbox, x, y, ref rememberFilter, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.RememberFavoriteCheckbox, x, y, ref rememberFavorite, playSound)) return;
 
             if (IsInRowOf(uiBuilder.SearchScopeDropdown, x, y))
             {
@@ -143,7 +143,7 @@ namespace EasyWarps.UI
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigEnableAnimationName, enableAnimation, uiBuilder.EnableAnimationCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigDisableHoverTextName, disableHoverText, uiBuilder.DisableHoverTextCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigRememberSortName, rememberSort, uiBuilder.RememberSortCheckbox);
-            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigRememberFilterName, rememberFilter, uiBuilder.RememberFilterCheckbox);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigRememberFavoriteName, rememberFavorite, uiBuilder.RememberFavoriteCheckbox);
 
             string scopeDisplay = ConfigUIBuilder.FormatSearchScope(defaultSearchScope);
             uiBuilder.DrawSearchScopeRow(b, TranslationCache.ConfigDefaultSearchScopeName, scopeDisplay, searchScopeDropdownOpen);
@@ -246,7 +246,7 @@ namespace EasyWarps.UI
             ModEntry.Config.EnableWarpAnimation = enableAnimation;
             ModEntry.Config.DisableSignHoveringText = disableHoverText;
             ModEntry.Config.RememberSortOption = rememberSort;
-            ModEntry.Config.RememberFilterOption = rememberFilter;
+            ModEntry.Config.RememberFavoriteOption = rememberFavorite;
             ModEntry.Config.DefaultSearchScope = defaultSearchScope;
 
             ModEntry.Instance.SaveConfig();

@@ -26,24 +26,19 @@ namespace EasyWarps.UI
         private List<WarpPoint> displayedPoints = new();
         private int scrollOffset;
 
-        // Dropdown state
         private bool searchScopeOpen;
         private bool sortDropdownOpen;
-        private bool filterDropdownOpen;
 
-        // Search
         private TextBox? searchTextBox;
         private bool searchFocused = true;
         private string lastSearchText = "";
 
-        // Delete confirmation
         private bool showDeleteConfirmation;
         private string? pendingDeleteId;
         private Rectangle deleteDialogBounds;
         private ClickableComponent? deleteYesButton;
         private ClickableComponent? deleteNoButton;
 
-        // Hover tracking
         private string? hoveredPointId;
 
         public WarpMenu(WarpPointStore store, SObject interactedSign, Vector2 interactedSignTile)
@@ -59,11 +54,10 @@ namespace EasyWarps.UI
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
-            // Initialize filter from config
             filterState.SearchScope = ModEntry.Config.DefaultSearchScope;
             if (ModEntry.Config.RememberSortOption)
                 filterState.SortMode = ModEntry.Config.LastSortMode;
-            if (ModEntry.Config.RememberFilterOption)
+            if (ModEntry.Config.RememberFavoriteOption)
                 filterState.FavoritesOnly = ModEntry.Config.LastFilterFavorite;
 
             CreateSearchTextBox();
@@ -104,20 +98,19 @@ namespace EasyWarps.UI
             scrollOffset = UIHelpers.ClampScrollOffset(scrollOffset, displayedPoints.Count, maxVisible);
         }
 
-        private bool AnyDropdownOpen => searchScopeOpen || sortDropdownOpen || filterDropdownOpen;
+        private bool AnyDropdownOpen => searchScopeOpen || sortDropdownOpen;
 
         private void CloseAllDropdowns()
         {
             searchScopeOpen = false;
             sortDropdownOpen = false;
-            filterDropdownOpen = false;
         }
 
         private void PersistFilterState()
         {
             if (ModEntry.Config.RememberSortOption)
                 ModEntry.Config.LastSortMode = filterState.SortMode;
-            if (ModEntry.Config.RememberFilterOption)
+            if (ModEntry.Config.RememberFavoriteOption)
                 ModEntry.Config.LastFilterFavorite = filterState.FavoritesOnly;
         }
 
@@ -125,13 +118,9 @@ namespace EasyWarps.UI
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
-            if (!isWithinBounds(x, y) && !showDeleteConfirmation && !AnyDropdownOpen)
-            {
-                PersistFilterState();
-                exitThisMenu();
-                if (playSound) Game1.playSound("bigDeSelect");
+            bool clickOnGear = uiBuilder.ConfigGearButton.containsPoint(x, y);
+            if (!isWithinBounds(x, y) && !clickOnGear && !showDeleteConfirmation && !AnyDropdownOpen)
                 return;
-            }
 
             if (showDeleteConfirmation)
             {
@@ -145,7 +134,6 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Close button
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
                 PersistFilterState();
@@ -154,7 +142,6 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Tabs
             if (uiBuilder.TabAll.containsPoint(x, y))
             {
                 filterState.Category = WarpCategory.All;
@@ -177,7 +164,6 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Search scope dropdown bar
             if (uiBuilder.SearchScopeDropdown.containsPoint(x, y))
             {
                 searchScopeOpen = true;
@@ -186,14 +172,6 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Search bar
-            if (uiBuilder.SearchBar.containsPoint(x, y))
-            {
-                searchFocused = true;
-                return;
-            }
-
-            // Search clear
             if (uiBuilder.SearchClearButton.containsPoint(x, y) && searchTextBox != null && !string.IsNullOrEmpty(searchTextBox.Text))
             {
                 searchTextBox.Text = "";
@@ -204,7 +182,12 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Sort dropdown bar
+            if (uiBuilder.SearchBar.containsPoint(x, y))
+            {
+                searchFocused = true;
+                return;
+            }
+
             if (uiBuilder.SortDropdown.containsPoint(x, y))
             {
                 sortDropdownOpen = true;
@@ -213,25 +196,14 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Filter dropdown bar
-            if (uiBuilder.FilterDropdown.containsPoint(x, y))
+            if (uiBuilder.FavoritesCheckbox.containsPoint(x, y))
             {
-                filterDropdownOpen = true;
-                searchFocused = false;
-                if (playSound) Game1.playSound("smallSelect");
-                return;
-            }
-
-            // Filter clear
-            if (uiBuilder.FilterClearButton.containsPoint(x, y) && filterState.FavoritesOnly)
-            {
-                filterState.FavoritesOnly = false;
+                filterState.FavoritesOnly = !filterState.FavoritesOnly;
                 RefreshDisplayedPoints();
                 if (playSound) Game1.playSound("smallSelect");
                 return;
             }
 
-            // Scroll arrows
             if (uiBuilder.ScrollUpArrow.containsPoint(x, y) && scrollOffset > 0)
             {
                 scrollOffset--;
@@ -245,7 +217,6 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Config gear
             if (uiBuilder.ConfigGearButton.containsPoint(x, y))
             {
                 PersistFilterState();
@@ -254,7 +225,6 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // List row clicks
             for (int i = 0; i < uiBuilder.ListItems.Count; i++)
             {
                 int dataIndex = scrollOffset + i;
@@ -266,7 +236,6 @@ namespace EasyWarps.UI
 
                 var point = displayedPoints[dataIndex];
 
-                // Fav star
                 if (uiBuilder.FavStarBounds[i].Contains(x, y))
                 {
                     store.ToggleFavorite(point.Id);
@@ -275,7 +244,6 @@ namespace EasyWarps.UI
                     return;
                 }
 
-                // Edit gear
                 if (uiBuilder.EditBounds[i].Contains(x, y))
                 {
                     OpenEditName(point);
@@ -283,7 +251,6 @@ namespace EasyWarps.UI
                     return;
                 }
 
-                // Delete X
                 if (uiBuilder.DeleteBounds[i].Contains(x, y))
                 {
                     ShowDeleteConfirmation(point.Id);
@@ -321,24 +288,13 @@ namespace EasyWarps.UI
                 return;
             }
 
-            // Filter clear always works
-            if (uiBuilder.FilterClearButton.containsPoint(x, y) && filterState.FavoritesOnly)
-            {
-                CloseAllDropdowns();
-                filterState.FavoritesOnly = false;
-                RefreshDisplayedPoints();
-                if (playSound) Game1.playSound("smallSelect");
-                return;
-            }
-
             // Try dropdown option clicks first (before bar checks, since options can overlap bars)
             if (TryHandleDropdownOptionClick(x, y, playSound))
                 return;
 
             // Same dropdown bar = toggle off
             if ((searchScopeOpen && uiBuilder.SearchScopeDropdown.containsPoint(x, y)) ||
-                (sortDropdownOpen && uiBuilder.SortDropdown.containsPoint(x, y)) ||
-                (filterDropdownOpen && uiBuilder.FilterDropdown.containsPoint(x, y)))
+                (sortDropdownOpen && uiBuilder.SortDropdown.containsPoint(x, y)))
             {
                 CloseAllDropdowns();
                 if (playSound) Game1.playSound("smallSelect");
@@ -348,7 +304,6 @@ namespace EasyWarps.UI
             // Different dropdown bar = switch
             if (uiBuilder.SearchScopeDropdown.containsPoint(x, y) ||
                 uiBuilder.SortDropdown.containsPoint(x, y) ||
-                uiBuilder.FilterDropdown.containsPoint(x, y) ||
                 uiBuilder.SearchBar.containsPoint(x, y))
             {
                 CloseAllDropdowns();
@@ -356,8 +311,6 @@ namespace EasyWarps.UI
                     searchScopeOpen = true;
                 else if (uiBuilder.SortDropdown.containsPoint(x, y))
                     sortDropdownOpen = true;
-                else if (uiBuilder.FilterDropdown.containsPoint(x, y))
-                    filterDropdownOpen = true;
                 else if (uiBuilder.SearchBar.containsPoint(x, y))
                     searchFocused = true;
                 if (playSound) Game1.playSound("smallSelect");
@@ -394,22 +347,6 @@ namespace EasyWarps.UI
                     if (uiBuilder.SortOptions[i].containsPoint(x, y))
                     {
                         filterState.SortMode = modes[i];
-                        CloseAllDropdowns();
-                        RefreshDisplayedPoints();
-                        if (playSound) Game1.playSound("smallSelect");
-                        return true;
-                    }
-                }
-            }
-
-            if (filterDropdownOpen)
-            {
-                for (int i = 0; i < uiBuilder.FilterOptions.Count; i++)
-                {
-                    if (uiBuilder.FilterOptions[i].containsPoint(x, y))
-                    {
-                        // Only one filter option: Favorite toggle
-                        filterState.FavoritesOnly = !filterState.FavoritesOnly;
                         CloseAllDropdowns();
                         RefreshDisplayedPoints();
                         if (playSound) Game1.playSound("smallSelect");
@@ -467,16 +404,11 @@ namespace EasyWarps.UI
             {
                 if (key == Keys.Escape)
                 {
-                    searchFocused = false;
+                    PersistFilterState();
+                    exitThisMenu();
                     Game1.playSound("bigDeSelect");
                     return;
                 }
-                if (key == Keys.Tab)
-                {
-                    searchFocused = false;
-                    return;
-                }
-                // Let text input handle other keys
                 return;
             }
 
@@ -562,7 +494,6 @@ namespace EasyWarps.UI
                 searchTextBox.Update();
                 searchTextBox.Selected = searchFocused;
 
-                // Detect text changes from TextBox
                 string currentText = searchTextBox.Text ?? "";
                 if (currentText != lastSearchText)
                 {
@@ -635,7 +566,8 @@ namespace EasyWarps.UI
             uiBuilder.DrawBackground(b);
             uiBuilder.DrawTabs(b, filterState.Category);
             uiBuilder.DrawSearchRow(b, searchTextBox?.Text ?? "", searchFocused, filterState.SearchScope, searchScopeOpen);
-            uiBuilder.DrawSortFilterRow(b, filterState.SortMode, filterState.FavoritesOnly, sortDropdownOpen, filterDropdownOpen);
+            uiBuilder.DrawSortFilterRow(b, filterState.SortMode, filterState.FavoritesOnly, sortDropdownOpen);
+            uiBuilder.DrawDivider(b);
 
             if (displayedPoints.Count == 0)
             {
@@ -663,7 +595,8 @@ namespace EasyWarps.UI
                 };
                 UIHelpers.DrawDropdownOptions(b, uiBuilder.SearchScopeDropdown.bounds,
                     uiBuilder.SearchScopeOptions, 0, uiBuilder.SearchScopeOptions.Count,
-                    isSelected: opt => opt.name == selectedLabel);
+                    isSelected: opt => opt.name == selectedLabel,
+                    panelPaddingV: WarpLayoutConstants.DropdownPanelPaddingV);
             }
             else if (sortDropdownOpen)
             {
@@ -678,16 +611,9 @@ namespace EasyWarps.UI
                 };
                 UIHelpers.DrawDropdownOptions(b, uiBuilder.SortDropdown.bounds,
                     uiBuilder.SortOptions, 0, uiBuilder.SortOptions.Count,
-                    isSelected: opt => opt.name == selectedSort);
+                    isSelected: opt => opt.name == selectedSort,
+                    panelPaddingV: WarpLayoutConstants.DropdownPanelPaddingV);
             }
-            else if (filterDropdownOpen)
-            {
-                UIHelpers.DrawDropdownOptions(b, uiBuilder.FilterDropdown.bounds,
-                    uiBuilder.FilterOptions, 0, uiBuilder.FilterOptions.Count,
-                    isSelected: opt => opt.name == TranslationCache.FilterFavorite && filterState.FavoritesOnly);
-            }
-
-            // Tooltips (when no dropdown/dialog is showing)
             if (!AnyDropdownOpen && !showDeleteConfirmation)
             {
                 DrawTooltips();
@@ -710,7 +636,6 @@ namespace EasyWarps.UI
             if (hoveredPointId == null)
                 return;
 
-            // Find the hovered point to check if name or location is truncated
             var point = store.GetById(hoveredPointId);
             if (point == null) return;
 
@@ -726,15 +651,24 @@ namespace EasyWarps.UI
                 var nameBounds = uiBuilder.NameBounds[i];
                 if (!nameBounds.Contains(mouseX, mouseY)) break;
 
-                bool nameTruncated = Game1.smallFont.MeasureString(point.Name).X > uiBuilder.NameMaxWidth;
-                bool locTruncated = Game1.smallFont.MeasureString(point.LocationName).X > uiBuilder.LocationMaxWidth;
+                bool hasName = !string.IsNullOrEmpty(point.Name);
+                int totalAvail = uiBuilder.NameMaxWidth + uiBuilder.SeparatorWidth + uiBuilder.LocationMaxWidth;
+                string locDisplayName = LocationClassifier.GetDisplayName(point.LocationName);
 
-                if (nameTruncated || locTruncated)
+                if (hasName)
                 {
-                    string tooltip = nameTruncated && locTruncated
-                        ? $"{point.Name} ({point.LocationName})"
-                        : nameTruncated ? point.Name : point.LocationName;
-                    UIHelpers.DrawWrappedTooltip(Game1.spriteBatch, tooltip);
+                    float rawNameW = Game1.smallFont.MeasureString(point.Name).X;
+                    float rawLocW = Game1.smallFont.MeasureString(locDisplayName).X;
+                    float rawTotal = rawNameW + uiBuilder.SeparatorWidth + rawLocW;
+
+                    if (rawTotal > totalAvail)
+                        UIHelpers.DrawWrappedTooltip(Game1.spriteBatch, $"{point.Name} | {locDisplayName}", 450);
+                }
+                else
+                {
+                    bool locTruncated = Game1.smallFont.MeasureString(locDisplayName).X > totalAvail;
+                    if (locTruncated)
+                        UIHelpers.DrawWrappedTooltip(Game1.spriteBatch, locDisplayName, 450);
                 }
                 break;
             }

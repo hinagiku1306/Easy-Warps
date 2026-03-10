@@ -36,6 +36,35 @@ namespace EasyWarps
             return text + "...";
         }
 
+        public static (string displayName, string displayLoc) TruncateNameAndLocation(
+            string name, string location, int totalAvail, int separatorWidth)
+        {
+            return TruncateNameAndLocation(name, location, totalAvail, separatorWidth,
+                s => Game1.smallFont.MeasureString(s).X);
+        }
+
+        internal static (string displayName, string displayLoc) TruncateNameAndLocation(
+            string name, string location, int totalAvail, int separatorWidth, Func<string, float> measureWidth)
+        {
+            int textAvail = totalAvail - separatorWidth;
+            float rawNameW = measureWidth(name);
+            float rawLocW = measureWidth(location);
+            float rawTotal = rawNameW + separatorWidth + rawLocW;
+
+            if (rawTotal <= totalAvail)
+                return (name, location);
+
+            float halfAvail = textAvail * 0.5f;
+            if (rawNameW > halfAvail && rawLocW > halfAvail)
+                return (TruncateText(name, textAvail / 2, measureWidth),
+                        TruncateText(location, textAvail - textAvail / 2, measureWidth));
+
+            if (rawNameW <= halfAvail)
+                return (name, TruncateText(location, (int)(textAvail - rawNameW), measureWidth));
+
+            return (TruncateText(name, (int)(textAvail - rawLocW), measureWidth), location);
+        }
+
         internal static string TrimTextFromStart(string text, float maxWidth, Func<string, float> measure)
         {
             if (string.IsNullOrEmpty(text))
