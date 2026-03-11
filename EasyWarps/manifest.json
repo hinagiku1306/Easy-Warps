@@ -1,7 +1,7 @@
 {
     "Name": "Easy Warps",
     "Author": "hinagiku1306",
-    "Version": "1.0",
+    "Version": "1.1",
     "Description": "Text signs as warp points.",
     "UniqueID": "hinagiku1306.EasyWarps",
     "EntryDll": "EasyWarps.dll",
